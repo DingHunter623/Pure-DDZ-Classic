@@ -1,0 +1,22 @@
+body {
+    margin:0;
+    background:#075e2a;
+    font-family:"Microsoft YaHei",sans-serif;
+}
+.game-container {
+    text-align:center;
+    padding:40px;
+    color:white;
+}
+h1 {
+    font-size:48px;
+}
+#status {
+    font-size:32px;
+    margin:30px;
+}
+button {
+    font-size:32px;
+    padding:20px 60px;
+    border-radius:15px;
+}
