@@ -2,26 +2,77 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>经典斗地主 - 单机长辈版</title>
 <link rel="stylesheet" href="css/style.css">
-<style>
-body{font-family:Microsoft YaHei,sans-serif;background:#0b5d32;color:#fff;text-align:center}
-button{font-size:28px;padding:15px 40px;margin:15px;border-radius:12px}
-#table{font-size:30px;margin:30px}
-</style>
 </head>
 <body>
-<div class="game-container">
-<h1>经典斗地主</h1>
-<h2>无广告 · 单机版 · 长辈友好</h2>
-<div id="status">准备开始</div>
-<div id="table">牌桌</div>
-<button id="start">开始游戏</button>
-<button id="pass">不要</button>
+<div class="game-shell">
+  <header class="topbar">
+    <div>
+      <h1>经典斗地主</h1>
+      <p>无广告 · 无登录 · 纯单机 · 长辈友好</p>
+    </div>
+    <div class="top-actions">
+      <button id="music" class="soft-btn">🎵 音乐开</button>
+      <button id="start" class="start-btn">开始 / 重开</button>
+    </div>
+  </header>
+
+  <main class="table-wrap">
+    <section id="left-panel" class="player-panel ai left-player">
+      <div class="avatar">🤖</div>
+      <div class="player-name">左边电脑</div>
+      <div id="left-role" class="role">农民</div>
+      <div id="left-count" class="count">剩 0 张</div>
+      <div class="card-backs"><i></i><i></i><i></i><i></i><i></i></div>
+    </section>
+
+    <section id="right-panel" class="player-panel ai right-player">
+      <div class="avatar">🤖</div>
+      <div class="player-name">右边电脑</div>
+      <div id="right-role" class="role">农民</div>
+      <div id="right-count" class="count">剩 0 张</div>
+      <div class="card-backs"><i></i><i></i><i></i><i></i><i></i></div>
+    </section>
+
+    <section class="center-area">
+      <div class="bottom-label">底牌</div>
+      <div id="bottom-cards" class="bottom-cards"></div>
+      <div id="status" class="status">准备开始</div>
+      <div id="center-play" class="center-play"></div>
+    </section>
+
+    <section id="me-panel" class="player-panel me-player">
+      <div class="me-meta">
+        <span class="avatar">🙂</span>
+        <span class="player-name">我</span>
+        <span id="me-role" class="role">农民</span>
+        <span id="me-count" class="count">剩 0 张</span>
+      </div>
+      <div id="hand" class="hand" aria-label="我的手牌"></div>
+      <div class="controls">
+        <button id="hint" class="control-btn hint-btn">提示</button>
+        <button id="pass" class="control-btn pass-btn">不要</button>
+        <button id="play" class="control-btn play-btn">出牌</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Pure DDZ Classic · 单机长辈版 · 开发：QilyLean｜启力精益
+  </footer>
 </div>
-<script src="js/v108-playable-runtime.js"></script>
-<script src="js/v109-card-ui-renderer.js"></script>
+
+<div id="toast" class="toast"></div>
+<div id="result" class="result hidden">
+  <div class="result-card">
+    <h2 id="result-title">本局结束</h2>
+    <p id="result-text"></p>
+    <button id="again" class="start-btn">再来一局</button>
+  </div>
+</div>
+
 <script src="js/game.js"></script>
 </body>
 </html>
