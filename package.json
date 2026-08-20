@@ -1,0 +1,11 @@
+{
+  "name": "pure-ddz-classic",
+  "version": "1.0.33",
+  "private": true,
+  "scripts": {
+    "test:web": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}
