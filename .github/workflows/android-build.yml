@@ -1,0 +1,28 @@
+name: Build Android APK
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
+      - run: chmod +x scripts/build-android-apk.sh
+      - run: scripts/build-android-apk.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Pure-DDZ-Classic-v1.0.0-ci
+          path: |
+            dist/Pure-DDZ-Classic-v1.0.0.apk
+            dist/Pure-DDZ-Classic-v1.0.0.sha256
