@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f6570"/><stop offset="1" stop-color="#073c47"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="#fff8e8"/>
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="url(#g)" stroke="#e8bd62" stroke-width="14"/>
+  <path d="M256 89c-32 53-111 96-111 166 0 51 39 86 89 72-9 22-26 42-45 55h134c-19-13-36-33-45-55 50 14 89-21 89-72 0-70-79-113-111-166z" fill="#fff"/>
+  <circle cx="363" cy="137" r="43" fill="#e54b3e" stroke="#ffe39b" stroke-width="8"/>
+  <text x="256" y="445" text-anchor="middle" font-family="Arial,sans-serif" font-size="52" font-weight="900" fill="#ffe39b">DDZ</text>
+</svg>

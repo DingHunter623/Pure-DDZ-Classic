@@ -1,9 +1,9 @@
 {
   "name": "pure-ddz-classic",
-  "version": "1.0.33",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:web": "playwright test"
+    "test:web": "playwright test --reporter=line"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0"
