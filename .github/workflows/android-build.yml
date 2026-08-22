@@ -6,6 +6,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -24,5 +27,20 @@ jobs:
         with:
           name: Pure-DDZ-Classic-v1.0.0-ci
           path: |
+            dist/Pure-DDZ-Classic-v1.0.0.apk
+            dist/Pure-DDZ-Classic-v1.0.0.sha256
+      - name: Publish stable GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: Pure DDZ Classic v1.0.0
+          target_commitish: main
+          make_latest: true
+          body: |
+            纯净斗地主 v1.0.0 Android 离线版。
+            无广告、无登录、无支付；大字体、中文语音、AI 提示。
+            QilyLean｜启力精益 官方发布。
+          files: |
             dist/Pure-DDZ-Classic-v1.0.0.apk
             dist/Pure-DDZ-Classic-v1.0.0.sha256
