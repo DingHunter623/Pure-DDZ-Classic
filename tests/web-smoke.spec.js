@@ -15,7 +15,7 @@ async function startGame(page) {
 test('opens without login and deals a complete hand in expert mode', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(url);
-  await expect(page.getByRole('heading', { name: '纯净斗地主 v1.1.0' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '纯净斗地主 v1.2.0' })).toBeVisible();
   await expect(page.locator('#setting-difficulty')).toHaveValue('expert');
   await page.evaluate(() => { Math.random = () => 0.25; });
   await startGame(page);
