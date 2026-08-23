@@ -55,6 +55,7 @@ test('every played hand receives enlarged visual feedback instead of speech-only
   await expect(page.locator('#v120-play-stage')).toHaveClass(/show/, { timeout: 3000 });
   await expect(page.locator('#v120-play-stage .v120-play-owner')).toContainText('我');
   await expect(page.locator('#v120-play-stage .v120-play-card')).toHaveCount(1);
+  await page.waitForTimeout(450);
   const visual = await page.locator('#v120-play-stage .v120-play-card').first().evaluate(el => {
     const box=el.getBoundingClientRect();
     return {width:box.width,height:box.height,site:el.querySelector('.qily-card-site')?.textContent||''};
