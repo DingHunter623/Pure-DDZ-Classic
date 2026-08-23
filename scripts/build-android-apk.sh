@@ -3,9 +3,16 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Library/Android/sdk}}"
-BUILD_TOOLS="$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort | tail -1)"
-PLATFORM_JAR="$(find "$SDK_ROOT/platforms" -mindepth 2 -maxdepth 2 -name android.jar | sort | tail -1)"
+VERSION="1.1.0"
+TARGET_API="${PURE_DDZ_TARGET_API:-36}"
+BUILD_TOOLS_VERSION="${PURE_DDZ_BUILD_TOOLS_VERSION:-36.0.0}"
+BUILD_TOOLS="$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION"
+PLATFORM_JAR="$SDK_ROOT/platforms/android-$TARGET_API/android.jar"
 JAVA_ROOT="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
+
+if [[ ! -f "$PLATFORM_JAR" ]]; then
+  PLATFORM_JAR="$(find "$SDK_ROOT/platforms" -mindepth 2 -maxdepth 2 -name android.jar | sort | tail -1)"
+fi
 
 export JAVA_HOME="$JAVA_ROOT"
 export PATH="$JAVA_ROOT/bin:$PATH"
@@ -29,7 +36,7 @@ KEYSTORE="$SIGNING_DIR/pure-ddz-classic-release.jks"
 PASSWORD_FILE="$SIGNING_DIR/release.password"
 UNSIGNED_APK="$BUILD_DIR/pure-ddz-unsigned.apk"
 ALIGNED_APK="$BUILD_DIR/pure-ddz-aligned.apk"
-OUTPUT_APK="$DIST_DIR/Pure-DDZ-Classic-v1.0.0.apk"
+OUTPUT_APK="$DIST_DIR/Pure-DDZ-Classic-v$VERSION.apk"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$STAGE_DIR/assets" "$CLASSES_DIR" "$DEX_DIR" "$DIST_DIR" "$SIGNING_DIR"
@@ -80,5 +87,5 @@ fi
 "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$OUTPUT_APK"
 "$BUILD_TOOLS/aapt" dump badging "$OUTPUT_APK" | sed -n '1,6p'
 APK_HASH="$(shasum -a 256 "$OUTPUT_APK" | awk '{print $1}')"
-printf '%s  %s\n' "$APK_HASH" "$(basename "$OUTPUT_APK")" | tee "$DIST_DIR/Pure-DDZ-Classic-v1.0.0.sha256"
+printf '%s  %s\n' "$APK_HASH" "$(basename "$OUTPUT_APK")" | tee "$DIST_DIR/Pure-DDZ-Classic-v$VERSION.sha256"
 echo "APK_READY=$OUTPUT_APK"

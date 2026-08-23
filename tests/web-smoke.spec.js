@@ -21,6 +21,23 @@ test('opens without login and deals a complete hand', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('uses QilyLean VI and maps the six business lines to the deck', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(url);
+  await expect(page.locator('.brand')).toContainText('QilyLean');
+  await expect(page.locator('.clean-promise b')).toHaveCount(6);
+  const themes = await page.evaluate(() => [
+    { rank: 3, suit: '♠' },
+    { rank: 3, suit: '♥' },
+    { rank: 3, suit: '♣' },
+    { rank: 3, suit: '♦' },
+    { rank: 16, suit: '🃏' },
+    { rank: 17, suit: '🃏' }
+  ].map(window.PureDDZTest.cardTheme));
+  expect(themes).toEqual(['新厂规划', '精益改善', '目视化', '数智工厂', 'APP开发', '官网建设']);
+  expect(errors).toEqual([]);
+});
+
 test('settings use the exact official URL without a trailing slash', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(url);
@@ -33,15 +50,46 @@ test('settings use the exact official URL without a trailing slash', async ({ pa
   expect(errors).toEqual([]);
 });
 
-test('core rule engine recognises common and explosive card types', async ({ page }) => {
+test('core rule engine recognises the complete classic card-type set', async ({ page }) => {
   await page.goto(url);
   const results = await page.evaluate(() => ({
+    single: window.PureDDZTest.analyzeRanks([3]).type,
+    pair: window.PureDDZTest.analyzeRanks([4, 4]).type,
+    triple: window.PureDDZTest.analyzeRanks([5, 5, 5]).type,
+    triple1: window.PureDDZTest.analyzeRanks([6, 6, 6, 7]).type,
+    triple2: window.PureDDZTest.analyzeRanks([6, 6, 6, 7, 7]).type,
     straight: window.PureDDZTest.analyzeRanks([3, 4, 5, 6, 7]).type,
+    pairStraight: window.PureDDZTest.analyzeRanks([3, 3, 4, 4, 5, 5]).type,
+    airplane: window.PureDDZTest.analyzeRanks([3, 3, 3, 4, 4, 4]).type,
+    airplane1: window.PureDDZTest.analyzeRanks([3, 3, 3, 4, 4, 4, 7, 8]).type,
+    airplane2: window.PureDDZTest.analyzeRanks([3, 3, 3, 4, 4, 4, 7, 7, 8, 8]).type,
+    four2: window.PureDDZTest.analyzeRanks([9, 9, 9, 9, 10, 11]).type,
+    four2pair: window.PureDDZTest.analyzeRanks([9, 9, 9, 9, 10, 10, 11, 11]).type,
     bomb: window.PureDDZTest.analyzeRanks([11, 11, 11, 11]).type,
     rocket: window.PureDDZTest.analyzeRanks([16, 17]).type,
-    triplePair: window.PureDDZTest.analyzeRanks([8, 8, 8, 9, 9]).type
+    invalidWithTwo: window.PureDDZTest.analyzeRanks([11, 12, 13, 14, 15])
   }));
-  expect(results).toEqual({ straight: 'straight', bomb: 'bomb', rocket: 'rocket', triplePair: 'triple2' });
+  expect(results).toEqual({
+    single: 'single', pair: 'pair', triple: 'triple', triple1: 'triple1', triple2: 'triple2',
+    straight: 'straight', pairStraight: 'pairStraight', airplane: 'airplane', airplane1: 'airplane1',
+    airplane2: 'airplane2', four2: 'four2', four2pair: 'four2pair', bomb: 'bomb', rocket: 'rocket', invalidWithTwo: null
+  });
+});
+
+test('a human can call landlord, receive the bottom cards and play a suggested legal hand', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(url);
+  await page.evaluate(() => { Math.random = () => 0.25; });
+  await page.getByRole('button', { name: '立即开始' }).click();
+  await page.getByRole('button', { name: '3 分抢地主' }).click();
+  await expect(page.locator('#me-role')).toHaveText('地主');
+  await expect(page.locator('#hand .card')).toHaveCount(20);
+  await page.getByRole('button', { name: 'AI 智能提示' }).click();
+  expect(await page.locator('#hand .card.selected').count()).toBeGreaterThan(0);
+  await page.getByRole('button', { name: '确认出牌' }).click();
+  await expect.poll(() => page.locator('#hand .card').count()).toBeLessThan(20);
+  await page.evaluate(() => window.PureDDZTest.stop());
+  expect(errors).toEqual([]);
 });
 
 for (const viewport of [

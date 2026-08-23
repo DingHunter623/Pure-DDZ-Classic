@@ -1,11 +1,13 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const PROFILE_KEY = 'pure_ddz_profile_v1';
   const SETTINGS_KEY = 'pure_ddz_settings_v1';
   const RANK_TEXT = {3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K',14:'A',15:'2',16:'小王',17:'大王'};
   const SUITS = ['♠','♥','♣','♦'];
+  const SUIT_THEME = {'♠':'新厂规划','♥':'精益改善','♣':'目视化','♦':'数智工厂'};
+  const JOKER_THEME = {16:'APP开发',17:'官网建设'};
   const COMBO_TEXT = {
     single:'单牌',pair:'对子',triple:'三张',triple1:'三带一',triple2:'三带二',straight:'顺子',
     pairStraight:'连对',airplane:'飞机',airplane1:'飞机带单',airplane2:'飞机带对',
@@ -16,7 +18,7 @@
   const state = {
     phase:'idle',hands:[[],[],[]],bottom:[],landlord:null,current:0,lastPlay:null,passCount:0,
     selected:new Set(),winner:null,bids:[null,null,null],bidStart:0,bidTurns:0,highestBid:0,highestBidder:null,
-    baseScore:1,multiplier:1,playCounts:[0,0,0],roundNumber:0,turnTimer:null,musicTimer:null,audioCtx:null,
+    baseScore:1,multiplier:1,playCounts:[0,0,0],roundNumber:0,turnTimer:null,transitionTimer:null,musicTimer:null,audioCtx:null,
     profile:loadJson(PROFILE_KEY,DEFAULT_PROFILE),settings:loadJson(SETTINGS_KEY,DEFAULT_SETTINGS)
   };
 
@@ -194,6 +196,7 @@
   function removeCards(hand,cards){ const ids=new Set(cards.map(card=>card.id)); return hand.filter(card=>!ids.has(card.id)); }
   function comboText(combo){ return COMBO_TEXT[combo?.type]||'出牌'; }
   function cardLabel(card){ return card.rank>=16?RANK_TEXT[card.rank]:`${RANK_TEXT[card.rank]}${card.suit}`; }
+  function cardTheme(card){ return card.rank>=16?JOKER_THEME[card.rank]:SUIT_THEME[card.suit]; }
   function isRed(card){ return card.suit==='♥'||card.suit==='♦'||card.rank===17; }
 
   function renderProfile(){
@@ -222,8 +225,8 @@
     state.hands[0].forEach(card=>{
       const button=document.createElement('button'), selected=state.selected.has(card.id);
       button.type='button'; button.className=`card${selected?' selected':''}${isRed(card)?' red':''}${card.rank>=16?' joker':''}`; button.dataset.id=String(card.id);
-      button.setAttribute('aria-label',`${cardLabel(card)}${selected?'，已选择':'，未选择'}`); button.setAttribute('aria-pressed',String(selected));
-      button.innerHTML=card.rank>=16?`<strong>${RANK_TEXT[card.rank]}</strong>`:`<strong>${RANK_TEXT[card.rank]}</strong><span>${card.suit}</span>`;
+      button.setAttribute('aria-label',`${cardLabel(card)}，${cardTheme(card)}主题${selected?'，已选择':'，未选择'}`); button.setAttribute('aria-pressed',String(selected));
+      button.innerHTML=card.rank>=16?`<strong>${RANK_TEXT[card.rank]}</strong><small class="card-theme">${cardTheme(card)}</small>`:`<strong>${RANK_TEXT[card.rank]}</strong><span>${card.suit}</span><small class="card-theme">${cardTheme(card)}</small>`;
       button.addEventListener('click',()=>toggleSelect(card.id)); hand.appendChild(button);
     });
   }
@@ -286,8 +289,12 @@
     if(bid<=state.highestBid) bid=0; return bid;
   }
 
+  function clearRoundTimers(){
+    clearTimeout(state.turnTimer); clearTimeout(state.transitionTimer); state.turnTimer=null; state.transitionTimer=null;
+  }
+
   function startRound(){
-    clearTimeout(state.turnTimer); closeModal('welcome'); closeModal('result');
+    clearRoundTimers(); closeModal('welcome'); closeModal('result');
     state.phase='bidding'; state.hands=[[],[],[]]; state.bottom=[]; state.landlord=null; state.lastPlay=null; state.passCount=0; state.selected.clear(); state.winner=null;
     state.bids=[null,null,null]; state.bidTurns=0; state.highestBid=0; state.highestBidder=null; state.baseScore=1; state.multiplier=1; state.playCounts=[0,0,0];
     const deck=shuffle(createDeck()); state.hands=[deck.slice(0,17),deck.slice(17,34),deck.slice(34,51)]; state.bottom=deck.slice(51); state.hands.forEach(sortHand);
@@ -298,17 +305,20 @@
 
   function placeBid(player,bid){
     if(state.phase!=='bidding'||state.current!==player) return;
-    const safeBid=Number(bid); state.bids[player]=safeBid; state.bidTurns++;
+    const safeBid=Number(bid);
+    if(!Number.isInteger(safeBid)||safeBid<0||safeBid>3||(safeBid!==0&&safeBid<=state.highestBid)) return;
+    state.bids[player]=safeBid; state.bidTurns++;
     if(safeBid>state.highestBid){ state.highestBid=safeBid; state.highestBidder=player; }
     playEffect(safeBid?'confirm':'pass'); speak(safeBid?`${playerName(player)}叫${safeBid}分`:`${playerName(player)}不叫`);
     render();
-    if(safeBid===3||state.bidTurns>=3){ setTimeout(finishBidding,430); return; }
+    if(safeBid===3||state.bidTurns>=3){ state.transitionTimer=setTimeout(finishBidding,430); return; }
     state.current=nextPlayer(player); render(); scheduleTurn();
   }
 
   function finishBidding(){
     if(state.phase!=='bidding') return;
-    if(state.highestBidder===null){ flash('本轮都不叫，自动重新发牌'); speak('都不叫，重新发牌'); setTimeout(startRound,900); return; }
+    state.transitionTimer=null;
+    if(state.highestBidder===null){ flash('本轮都不叫，自动重新发牌'); speak('都不叫，重新发牌'); state.transitionTimer=setTimeout(startRound,900); return; }
     state.landlord=state.highestBidder; state.baseScore=Math.max(1,state.highestBid); state.hands[state.landlord].push(...state.bottom); sortHand(state.hands[state.landlord]); state.current=state.landlord; state.phase='playing';
     $('hint-message').textContent=state.current===0?'你是本轮首出，可以出任意合规牌型。':'请留意牌桌，轮到你时会有明显提示。';
     speak(`${playerName(state.landlord)}当地主，游戏开始`); playEffect('start'); render(); scheduleTurn();
@@ -328,6 +338,8 @@
 
   function commitPlay(player,cards){
     if(state.phase!=='playing'||state.current!==player) return {ok:false,message:'现在不能出牌'};
+    const requestedIds=new Set((cards||[]).map(card=>card.id)), handIds=new Set(state.hands[player].map(card=>card.id));
+    if(requestedIds.size!==(cards||[]).length||[...requestedIds].some(id=>!handIds.has(id))) return {ok:false,message:'所选牌不在当前手牌中'};
     const combo=analyze(cards); if(!combo) return {ok:false,message:'这组牌不符合斗地主牌型'};
     const target=state.lastPlay&&state.lastPlay.player!==player?state.lastPlay.combo:null;
     if(target&&!canBeat(combo,target)) return {ok:false,message:'这组牌压不过上一手'};
@@ -367,7 +379,7 @@
 
   function finishIfNeeded(player){
     if(state.hands[player].length!==0) return false;
-    state.winner=player; state.phase='ended';
+    clearRoundTimers(); state.winner=player; state.phase='ended';
     const landlordWon=player===state.landlord, humanWon=state.landlord===0?landlordWon:!landlordWon;
     const spring=landlordWon?(state.playCounts.filter((_,index)=>index!==state.landlord).reduce((a,b)=>a+b,0)===0):(state.playCounts[state.landlord]<=1);
     if(spring) state.multiplier*=2;
@@ -457,10 +469,10 @@
   };
 
   window.PureDDZTest=Object.freeze({
-    version:VERSION,start:startRound,bid:humanBid,hint,analyze,canBeat,generateCandidates,
-    getState:()=>deepCopy({...state,selected:[...state.selected],turnTimer:null,musicTimer:null,audioCtx:null}),
+    version:VERSION,start:startRound,bid:humanBid,hint,analyze,canBeat,generateCandidates,cardTheme,
+    getState:()=>deepCopy({...state,selected:[...state.selected],turnTimer:null,transitionTimer:null,musicTimer:null,audioCtx:null}),
     analyzeRanks:ranks=>analyze(ranks.map((rank,index)=>({id:index,rank,suit:'♠'}))),
-    stop:()=>{ clearTimeout(state.turnTimer); stopMusic(); }
+    stop:()=>{ clearRoundTimers(); stopMusic(); }
   });
 
   bindEvents(); applySettings(); render();

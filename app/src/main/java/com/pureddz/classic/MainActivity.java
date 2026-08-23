@@ -1,7 +1,6 @@
 package com.pureddz.classic;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -31,13 +30,13 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Window window = getWindow();
-        window.setStatusBarColor(Color.rgb(7, 60, 71));
-        window.setNavigationBarColor(Color.rgb(7, 60, 71));
+        window.setStatusBarColor(Color.rgb(15, 75, 90));
+        window.setNavigationBarColor(Color.rgb(15, 75, 90));
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         hideSystemBars();
 
         gameView = new WebView(this);
-        gameView.setBackgroundColor(Color.rgb(7, 60, 71));
+        gameView.setBackgroundColor(Color.rgb(15, 75, 90));
         gameView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
         WebSettings settings = gameView.getSettings();
@@ -46,16 +45,20 @@ public final class MainActivity extends Activity {
         settings.setDatabaseEnabled(false);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(false);
+        settings.setAllowFileAccessFromFileURLs(false);
+        settings.setAllowUniversalAccessFromFileURLs(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
         settings.setTextZoom(100);
-        settings.setUserAgentString(settings.getUserAgentString() + " PureDDZClassic/1.0.0 QilyLean");
+        settings.setUserAgentString(settings.getUserAgentString() + " PureDDZClassic/1.1.0 QilyLean");
+        WebView.setWebContentsDebuggingEnabled(false);
 
         gameView.setWebChromeClient(new WebChromeClient());
         gameView.setWebViewClient(new GameWebViewClient());
-        gameView.addJavascriptInterface(new AndroidBridge(this), "QilyLeanAndroid");
+        gameView.addJavascriptInterface(new AndroidBridge(), "QilyLeanAndroid");
         setContentView(gameView);
 
         speech = new TextToSpeech(getApplicationContext(), status -> {
@@ -96,6 +99,8 @@ public final class MainActivity extends Activity {
     }
 
     private void openExternal(Uri uri) {
+        String scheme = uri.getScheme();
+        if (!("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme) || "mailto".equalsIgnoreCase(scheme))) return;
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(intent);
@@ -107,7 +112,7 @@ public final class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
-            if ("file".equalsIgnoreCase(uri.getScheme())) return false;
+            if (uri.toString().startsWith("file:///android_asset/www/")) return false;
             openExternal(uri);
             return true;
         }
@@ -115,19 +120,13 @@ public final class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             Uri uri = Uri.parse(url);
-            if ("file".equalsIgnoreCase(uri.getScheme())) return false;
+            if (url.startsWith("file:///android_asset/www/")) return false;
             openExternal(uri);
             return true;
         }
     }
 
     private final class AndroidBridge {
-        private final Context context;
-
-        AndroidBridge(Context context) {
-            this.context = context;
-        }
-
         @JavascriptInterface
         public void speak(String text) {
             if (text == null || text.trim().isEmpty()) return;
@@ -138,7 +137,7 @@ public final class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getVersion() {
-            return "1.0.0";
+            return "1.1.0";
         }
     }
 
