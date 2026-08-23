@@ -1,0 +1,52 @@
+name: Vendor QilyLean Joker Assets
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/vendor-qilylean-jokers.yml'
+      - 'web/js/card-theme.js'
+      - 'web/assets/pure-ddz/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Download canonical QilyLean website assets
+        run: |
+          set -euo pipefail
+          mkdir -p web/assets/pure-ddz
+          curl -fL --retry 6 --retry-delay 2 \
+            'https://raw.githubusercontent.com/DingHunter623/QilyLean/main/qilylean/ding-qili-ai-avatar-560.webp' \
+            -o web/assets/pure-ddz/avatar-king.webp
+          curl -fL --retry 6 --retry-delay 2 \
+            'https://raw.githubusercontent.com/DingHunter623/QilyLean/main/qilylean/c919-strategy-hero-v14.png' \
+            -o web/assets/pure-ddz/airplane-joker.png
+          test -s web/assets/pure-ddz/avatar-king.webp
+          test -s web/assets/pure-ddz/airplane-joker.png
+          test "$(head -c 4 web/assets/pure-ddz/avatar-king.webp)" = 'RIFF'
+          test "$(xxd -p -l 8 web/assets/pure-ddz/airplane-joker.png)" = '89504e470d0a1a0a'
+          grep -q 'avatar-king.webp' web/js/card-theme.js
+          grep -q 'airplane-joker.png' web/js/card-theme.js
+
+      - name: Commit canonical assets to feature branch
+        run: |
+          set -euo pipefail
+          git config user.name 'QilyLean Release Bot'
+          git config user.email 'DingHunter623@gmail.com'
+          git add web/assets/pure-ddz/avatar-king.webp web/assets/pure-ddz/airplane-joker.png
+          if git diff --cached --quiet; then
+            echo 'Canonical joker assets already present'
+          else
+            git commit -m 'assets: vendor QilyLean avatar and C919 joker visuals'
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi

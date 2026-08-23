@@ -45,12 +45,26 @@ cp -R "$ROOT/web" "$STAGE_DIR/assets/www"
 for required in \
   "$STAGE_DIR/assets/www/index.html" \
   "$STAGE_DIR/assets/www/css/style.css" \
-  "$STAGE_DIR/assets/www/js/game.js"; do
+  "$STAGE_DIR/assets/www/css/qilylean-theme.css" \
+  "$STAGE_DIR/assets/www/js/qilylean-theme.js" \
+  "$STAGE_DIR/assets/www/js/card-theme.js" \
+  "$STAGE_DIR/assets/www/js/ai-expert.js" \
+  "$STAGE_DIR/assets/www/js/game.js" \
+  "$STAGE_DIR/assets/www/assets/pure-ddz/avatar-king.webp" \
+  "$STAGE_DIR/assets/www/assets/pure-ddz/airplane-joker.png"; do
   if [[ ! -s "$required" ]]; then
-    echo "缺少 Android 离线资源：$required" >&2
+    echo "缺少 Android v1.1.0 离线资源：$required" >&2
     exit 1
   fi
 done
+
+node --check "$STAGE_DIR/assets/www/js/card-theme.js"
+node --check "$STAGE_DIR/assets/www/js/ai-expert.js"
+node --check "$STAGE_DIR/assets/www/js/game.js"
+grep -q "difficulty:'expert'" "$STAGE_DIR/assets/www/js/game.js"
+grep -q "chooseAdvancedPlay" "$STAGE_DIR/assets/www/js/ai-expert.js"
+grep -q "avatar-king.webp" "$STAGE_DIR/assets/www/js/card-theme.js"
+grep -q "airplane-joker.png" "$STAGE_DIR/assets/www/js/card-theme.js"
 
 "$BUILD_TOOLS/aapt" package -f \
   -M "$MANIFEST" \
@@ -99,10 +113,18 @@ BADGING="$("$BUILD_TOOLS/aapt" dump badging "$OUTPUT_APK")"
 printf '%s\n' "$BADGING" | sed -n '1,6p'
 printf '%s\n' "$BADGING" | grep -q "versionName='${VERSION}'"
 
-unzip -l "$OUTPUT_APK" | grep -q 'assets/www/index.html'
-unzip -l "$OUTPUT_APK" | grep -q 'assets/www/css/style.css'
-unzip -l "$OUTPUT_APK" | grep -q 'assets/www/js/game.js'
-unzip -l "$OUTPUT_APK" | grep -q 'classes.dex'
+for packaged in \
+  'assets/www/index.html' \
+  'assets/www/css/style.css' \
+  'assets/www/css/qilylean-theme.css' \
+  'assets/www/js/card-theme.js' \
+  'assets/www/js/ai-expert.js' \
+  'assets/www/js/game.js' \
+  'assets/www/assets/pure-ddz/avatar-king.webp' \
+  'assets/www/assets/pure-ddz/airplane-joker.png' \
+  'classes.dex'; do
+  unzip -l "$OUTPUT_APK" | grep -q "$packaged"
+done
 
 APK_HASH="$(shasum -a 256 "$OUTPUT_APK" | awk '{print $1}')"
 printf '%s  %s\n' "$APK_HASH" "$(basename "$OUTPUT_APK")" | tee "$OUTPUT_SHA"
