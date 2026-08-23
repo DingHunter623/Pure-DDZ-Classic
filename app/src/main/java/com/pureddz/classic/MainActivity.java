@@ -24,6 +24,7 @@ import android.webkit.WebViewClient;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
+    private static final String LOCAL_GAME_URL = "file:///android_asset/www/index.html?source=android";
     private WebView gameView;
     private TextToSpeech speech;
 
@@ -45,13 +46,17 @@ public final class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(false);
         settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(false);
+        settings.setAllowContentAccess(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            settings.setAllowFileAccessFromFileURLs(true);
+            settings.setAllowUniversalAccessFromFileURLs(false);
+        }
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
         settings.setTextZoom(100);
-        settings.setUserAgentString(settings.getUserAgentString() + " PureDDZClassic/1.0.0 QilyLean");
+        settings.setUserAgentString(settings.getUserAgentString() + " PureDDZClassic/1.0.1 QilyLean");
 
         gameView.setWebChromeClient(new WebChromeClient());
         gameView.setWebViewClient(new GameWebViewClient());
@@ -69,7 +74,7 @@ public final class MainActivity extends Activity {
             }
         });
 
-        gameView.loadUrl("file:///android_asset/www/index.html?source=android");
+        gameView.loadUrl(LOCAL_GAME_URL);
     }
 
     private void hideSystemBars() {
@@ -79,9 +84,7 @@ public final class MainActivity extends Activity {
             WindowInsetsController controller = window.getInsetsController();
             if (controller != null) {
                 controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                );
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             }
         } else {
             window.getDecorView().setSystemUiVisibility(
@@ -104,10 +107,16 @@ public final class MainActivity extends Activity {
     }
 
     private final class GameWebViewClient extends WebViewClient {
+        private boolean isLocalGameUri(Uri uri) {
+            if (uri == null) return false;
+            String scheme = uri.getScheme();
+            return "file".equalsIgnoreCase(scheme) || "data".equalsIgnoreCase(scheme) || "about".equalsIgnoreCase(scheme);
+        }
+
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
-            if ("file".equalsIgnoreCase(uri.getScheme())) return false;
+            if (isLocalGameUri(uri)) return false;
             openExternal(uri);
             return true;
         }
@@ -115,7 +124,7 @@ public final class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             Uri uri = Uri.parse(url);
-            if ("file".equalsIgnoreCase(uri.getScheme())) return false;
+            if (isLocalGameUri(uri)) return false;
             openExternal(uri);
             return true;
         }
@@ -138,7 +147,7 @@ public final class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getVersion() {
-            return "1.0.0";
+            return "1.0.1";
         }
     }
 
