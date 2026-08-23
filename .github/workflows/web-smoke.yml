@@ -15,6 +15,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Validate v1.1.0 runtime modules
+        run: |
+          set -euo pipefail
+          node --check web/js/qilylean-theme.js
+          node --check web/js/card-theme.js
+          node --check web/js/ai-expert.js
+          node --check web/js/game.js
+          grep -q "const VERSION = '1.1.0'" web/js/game.js
+          grep -q "difficulty:'expert'" web/js/game.js
+          grep -q "challenge" web/js/ai-expert.js
+          grep -q "PublicCardMemory" web/js/ai-expert.js
+          grep -q "avatar-king.webp" web/js/card-theme.js
+          grep -q "airplane-joker.png" web/js/card-theme.js
+          grep -q 'value="expert" selected' web/index.html
+          grep -q 'value="challenge"' web/index.html
       - run: npm install
       - run: npx playwright install --with-deps chromium
       - name: Start local web server
