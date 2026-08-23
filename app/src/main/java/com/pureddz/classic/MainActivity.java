@@ -30,7 +30,7 @@ import android.widget.TextView;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
-    private static final String VERSION = "1.0.2";
+    private static final String VERSION = "1.0.3";
     private static final String LOCAL_GAME_URL = "file:///android_asset/www/index.html?source=android";
     private static final Uri ONLINE_GAME_URL = Uri.parse("https://qilylean.com/tools/pure-ddz/");
 
@@ -44,7 +44,6 @@ public final class MainActivity extends Activity {
         window.setStatusBarColor(Color.rgb(7, 60, 71));
         window.setNavigationBarColor(Color.rgb(7, 60, 71));
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        hideSystemBars();
 
         try {
             gameView = new WebView(this);
@@ -71,6 +70,7 @@ public final class MainActivity extends Activity {
             gameView.setWebViewClient(new GameWebViewClient());
             gameView.addJavascriptInterface(new AndroidBridge(this), "QilyLeanAndroid");
             setContentView(gameView);
+            gameView.post(this::hideSystemBars);
             gameView.loadUrl(LOCAL_GAME_URL);
         } catch (Throwable startupError) {
             showNativeFallback();
@@ -92,15 +92,28 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void applyHiddenSystemBars(WindowInsetsController controller) {
+        controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+        controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+    }
+
     private void hideSystemBars() {
         Window window = getWindow();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = window.getInsetsController();
+            View decorView = window.getDecorView();
+            if (decorView == null) return;
+
+            WindowInsetsController controller = decorView.getWindowInsetsController();
             if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                applyHiddenSystemBars(controller);
+                return;
             }
+
+            decorView.post(() -> {
+                WindowInsetsController deferredController = decorView.getWindowInsetsController();
+                if (deferredController != null) applyHiddenSystemBars(deferredController);
+            });
         } else {
             window.getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -151,6 +164,7 @@ public final class MainActivity extends Activity {
             panel.addView(copy, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             panel.addView(openWeb, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             setContentView(panel);
+            panel.post(this::hideSystemBars);
         });
     }
 
