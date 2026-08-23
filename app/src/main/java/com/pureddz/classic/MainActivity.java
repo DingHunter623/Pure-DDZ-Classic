@@ -30,7 +30,7 @@ import android.widget.TextView;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
-    private static final String VERSION = "1.0.3";
+    private static final String VERSION = "1.1.0";
     private static final String LOCAL_GAME_URL = "file:///android_asset/www/index.html?source=android";
     private static final Uri ONLINE_GAME_URL = Uri.parse("https://qilylean.com/tools/pure-ddz/");
 
