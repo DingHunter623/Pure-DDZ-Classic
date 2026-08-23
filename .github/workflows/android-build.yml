@@ -76,7 +76,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            set -euxo pipefail
+            set -eu
             adb install -r dist/Pure-DDZ-Classic-v1.0.2.apk
             adb logcat -c
             adb shell am force-stop com.pureddz.classic
