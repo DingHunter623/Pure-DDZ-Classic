@@ -100,7 +100,7 @@ test('settings use the exact official URL without a trailing slash', async ({ pa
   const official = page.locator('.official-info a').filter({ hasText: '官方网址' });
   await expect(official).toHaveAttribute('href', 'https://qilylean.com');
   await expect(official.locator('b')).toHaveText('https://qilylean.com');
-  await expect(page.getByText('admin@qilylean.com', { exact: true })).toBeVisible();
+  await expect(page.locator('.official-info a[href="mailto:admin@qilylean.com"] b')).toHaveText('admin@qilylean.com');
   expect((await official.getAttribute('href')).endsWith('/')).toBe(false);
   expect(errors).toEqual([]);
 });
