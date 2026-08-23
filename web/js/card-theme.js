@@ -1,6 +1,10 @@
 (() => {
   'use strict';
 
+  const scriptUrl=document.currentScript?.src||'';
+  const runtimeRoot=scriptUrl?new URL('../',scriptUrl):new URL('./',window.location.href);
+  const assetUrl=file=>new URL(`assets/pure-ddz/${file}`,runtimeRoot).href;
+
   const RANK_THEME = Object.freeze({
     3:{code:'现场',title:'现场事实',subtitle:'Gemba Facts',skill:'现场观察'},
     4:{code:'数据',title:'工程数据',subtitle:'Engineering Data',skill:'数据采集'},
@@ -25,8 +29,8 @@
   });
 
   const JOKER_THEME = Object.freeze({
-    16:{type:'small-joker',title:'小王',code:'C919',subtitle:'六大业务飞机模型',image:'assets/pure-ddz/airplane-joker.png'},
-    17:{type:'big-joker',title:'大王',code:'QILY',subtitle:'QilyLean 体系设计者',image:'assets/pure-ddz/avatar-king.webp'}
+    16:{type:'small-joker',title:'小王',code:'C919',subtitle:'六大业务飞机模型',image:assetUrl('airplane-joker.png')},
+    17:{type:'big-joker',title:'大王',code:'QILY',subtitle:'QilyLean 体系设计者',image:assetUrl('avatar-king.webp')}
   });
 
   const RULE_RANK = Object.freeze({11:'J',12:'Q',13:'K',14:'A',15:'2',16:'小王',17:'大王'});
@@ -39,13 +43,11 @@
       .replaceAll('"','&quot;');
   }
 
-  function ruleRankText(card){
-    return RULE_RANK[card.rank] || String(card.rank);
-  }
+  function ruleRankText(card){ return RULE_RANK[card.rank] || String(card.rank); }
 
   function getTheme(card){
     if(!card) return null;
-    if(card.rank >= 16) return {...JOKER_THEME[card.rank],rank:card.rank,joker:true};
+    if(card.rank>=16) return {...JOKER_THEME[card.rank],rank:card.rank,joker:true};
     return {...RANK_THEME[card.rank],suit:SUIT_THEME[card.suit],rank:card.rank,joker:false};
   }
 
@@ -59,8 +61,7 @@
   }
 
   function renderNormalCard(card){
-    const theme=getTheme(card);
-    const red=card.suit==='♥'||card.suit==='♦';
+    const theme=getTheme(card),red=card.suit==='♥'||card.suit==='♦';
     return `<span class="qily-card qily-card--normal${red?' qily-rule-red':''}">
       <span class="qily-card-corner"><b>${escapeHtml(ruleRankText(card))}</b><i>${escapeHtml(card.suit)}</i></span>
       <span class="qily-card-theme"><small>${escapeHtml(theme.suit.code)}</small><strong>${escapeHtml(theme.code)}</strong><b>${escapeHtml(theme.title)}</b><em>${escapeHtml(theme.skill)}</em></span>
@@ -68,20 +69,13 @@
     </span>`;
   }
 
-  function renderCard(card){
-    return card.rank>=16 ? renderJoker(card) : renderNormalCard(card);
-  }
+  function renderCard(card){ return card.rank>=16?renderJoker(card):renderNormalCard(card); }
 
   function renderMiniCard(card){
     const theme=getTheme(card);
-    if(card.rank>=16){
-      return `<span class="mini-card qily-mini-joker ${theme.type}"><img src="${escapeHtml(theme.image)}" alt=""><b>${escapeHtml(theme.title)}</b></span>`;
-    }
+    if(card.rank>=16) return `<span class="mini-card qily-mini-joker ${theme.type}"><img src="${escapeHtml(theme.image)}" alt=""><b>${escapeHtml(theme.title)}</b></span>`;
     return `<span class="mini-card qily-mini-business${card.suit==='♥'||card.suit==='♦'?' red':''}"><b>${escapeHtml(ruleRankText(card))}${escapeHtml(card.suit)}</b><small>${escapeHtml(theme.code)}</small></span>`;
   }
 
-  window.QilyLeanCardTheme=Object.freeze({
-    getTheme,renderCard,renderMiniCard,ruleRankText,
-    rankThemes:RANK_THEME,suitThemes:SUIT_THEME,jokerThemes:JOKER_THEME
-  });
+  window.QilyLeanCardTheme=Object.freeze({getTheme,renderCard,renderMiniCard,ruleRankText,rankThemes:RANK_THEME,suitThemes:SUIT_THEME,jokerThemes:JOKER_THEME,runtimeRoot:runtimeRoot.href});
 })();
