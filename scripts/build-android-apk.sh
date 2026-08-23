@@ -25,6 +25,8 @@ if [[ ! -x "$BUILD_TOOLS/aapt" || ! -f "$PLATFORM_JAR" ]]; then
   exit 1
 fi
 
+grep -q 'android:screenOrientation="landscape"' "$MANIFEST"
+
 BUILD_DIR="$ROOT/build/manual-android"
 STAGE_DIR="$BUILD_DIR/stage"
 CLASSES_DIR="$BUILD_DIR/classes"
@@ -46,25 +48,31 @@ for required in \
   "$STAGE_DIR/assets/www/index.html" \
   "$STAGE_DIR/assets/www/css/style.css" \
   "$STAGE_DIR/assets/www/css/qilylean-theme.css" \
+  "$STAGE_DIR/assets/www/css/visual-v120.css" \
   "$STAGE_DIR/assets/www/js/qilylean-theme.js" \
   "$STAGE_DIR/assets/www/js/card-theme.js" \
+  "$STAGE_DIR/assets/www/js/visual-v120.js" \
   "$STAGE_DIR/assets/www/js/ai-expert.js" \
   "$STAGE_DIR/assets/www/js/game.js" \
   "$STAGE_DIR/assets/www/assets/pure-ddz/avatar-king.webp" \
   "$STAGE_DIR/assets/www/assets/pure-ddz/airplane-joker.png"; do
   if [[ ! -s "$required" ]]; then
-    echo "缺少 Android v1.1.0 离线资源：$required" >&2
+    echo "缺少 Android 离线资源：$required" >&2
     exit 1
   fi
 done
 
 node --check "$STAGE_DIR/assets/www/js/card-theme.js"
+node --check "$STAGE_DIR/assets/www/js/visual-v120.js"
 node --check "$STAGE_DIR/assets/www/js/ai-expert.js"
 node --check "$STAGE_DIR/assets/www/js/game.js"
 grep -q "difficulty:'expert'" "$STAGE_DIR/assets/www/js/game.js"
 grep -q "chooseAdvancedPlay" "$STAGE_DIR/assets/www/js/ai-expert.js"
 grep -q "avatar-king.webp" "$STAGE_DIR/assets/www/js/card-theme.js"
 grep -q "airplane-joker.png" "$STAGE_DIR/assets/www/js/card-theme.js"
+grep -q '启力精益 | https://qilylean.com' "$STAGE_DIR/assets/www/js/card-theme.js"
+grep -q '启力托管' "$STAGE_DIR/assets/www/js/visual-v120.js"
+grep -q 'requestLandscape' "$STAGE_DIR/assets/www/js/visual-v120.js"
 
 "$BUILD_TOOLS/aapt" package -f \
   -M "$MANIFEST" \
@@ -117,7 +125,9 @@ for packaged in \
   'assets/www/index.html' \
   'assets/www/css/style.css' \
   'assets/www/css/qilylean-theme.css' \
+  'assets/www/css/visual-v120.css' \
   'assets/www/js/card-theme.js' \
+  'assets/www/js/visual-v120.js' \
   'assets/www/js/ai-expert.js' \
   'assets/www/js/game.js' \
   'assets/www/assets/pure-ddz/avatar-king.webp' \
