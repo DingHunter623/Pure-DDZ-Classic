@@ -52,3 +52,41 @@ jobs:
           files: |
             dist/Pure-DDZ-Classic-v1.0.2.apk
             dist/Pure-DDZ-Classic-v1.0.2.sha256
+
+  launch-smoke:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Pure-DDZ-Classic-v1.0.2-ci
+          path: dist
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+      - name: Launch APK on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -euxo pipefail
+            adb install -r dist/Pure-DDZ-Classic-v1.0.2.apk
+            adb logcat -c
+            adb shell am force-stop com.pureddz.classic
+            adb shell am start -W -n com.pureddz.classic/.MainActivity | tee /tmp/am-start.txt
+            grep -q 'Status: ok' /tmp/am-start.txt
+            sleep 5
+            test -n "$(adb shell pidof com.pureddz.classic | tr -d '\r')"
+            adb shell dumpsys activity activities | grep -q 'com.pureddz.classic/.MainActivity'
+            if adb logcat -d -v brief | grep -E 'FATAL EXCEPTION|AndroidRuntime.*com\.pureddz\.classic'; then
+              echo 'Detected Android runtime crash after launch'
+              exit 1
+            fi
+            echo 'ANDROID_LAUNCH_SMOKE_OK'
