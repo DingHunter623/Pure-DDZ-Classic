@@ -24,26 +24,31 @@ jobs:
           packages: platform-tools
       - name: Install stable Android SDK
         run: yes | sdkmanager --licenses >/dev/null || true; sdkmanager "platforms;android-36" "build-tools;36.0.0"
-      - run: chmod +x scripts/build-android-apk.sh
-      - run: scripts/build-android-apk.sh
+      - name: Build and validate offline APK
+        run: |
+          chmod +x scripts/build-android-apk.sh
+          scripts/build-android-apk.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: Pure-DDZ-Classic-v1.0.0-ci
+          name: Pure-DDZ-Classic-v1.0.2-ci
+          retention-days: 14
           path: |
-            dist/Pure-DDZ-Classic-v1.0.0.apk
-            dist/Pure-DDZ-Classic-v1.0.0.sha256
+            dist/Pure-DDZ-Classic-v1.0.2.apk
+            dist/Pure-DDZ-Classic-v1.0.2.sha256
       - name: Publish stable GitHub Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: Pure DDZ Classic v1.0.0
+          tag_name: v1.0.2
+          name: Pure DDZ Classic v1.0.2
           target_commitish: main
           make_latest: true
           body: |
-            纯净斗地主 v1.0.0 Android 离线版。
+            纯净斗地主 v1.0.2 Android 离线修复版。
+            修复安装后启动失败风险，恢复 APK 本地 assets/www 游戏资源访问，并加入原生启动兜底页。
+            构建阶段强制校验 index.html、style.css、game.js 与 classes.dex 已打包进 APK。
             无广告、无登录、无支付；大字体、中文语音、AI 提示。
             QilyLean｜启力精益 官方发布。
           files: |
-            dist/Pure-DDZ-Classic-v1.0.0.apk
-            dist/Pure-DDZ-Classic-v1.0.0.sha256
+            dist/Pure-DDZ-Classic-v1.0.2.apk
+            dist/Pure-DDZ-Classic-v1.0.2.sha256
