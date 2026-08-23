@@ -6,10 +6,16 @@ SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Library/Android/sdk}}"
 BUILD_TOOLS="$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort | tail -1)"
 PLATFORM_JAR="$(find "$SDK_ROOT/platforms" -mindepth 2 -maxdepth 2 -name android.jar | sort | tail -1)"
 JAVA_ROOT="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
+MANIFEST="$ROOT/app/src/main/AndroidManifest.xml"
+VERSION="$(sed -n 's/.*android:versionName="\([^"]*\)".*/\1/p' "$MANIFEST" | head -1)"
 
 export JAVA_HOME="$JAVA_ROOT"
 export PATH="$JAVA_ROOT/bin:$PATH"
 
+if [[ -z "$VERSION" ]]; then
+  echo "无法从 AndroidManifest.xml 读取版本号" >&2
+  exit 1
+fi
 if [[ ! -x "$JAVA_ROOT/bin/javac" ]]; then
   echo "未找到 JDK：$JAVA_ROOT" >&2
   exit 1
@@ -29,14 +35,25 @@ KEYSTORE="$SIGNING_DIR/pure-ddz-classic-release.jks"
 PASSWORD_FILE="$SIGNING_DIR/release.password"
 UNSIGNED_APK="$BUILD_DIR/pure-ddz-unsigned.apk"
 ALIGNED_APK="$BUILD_DIR/pure-ddz-aligned.apk"
-OUTPUT_APK="$DIST_DIR/Pure-DDZ-Classic-v1.0.0.apk"
+OUTPUT_APK="$DIST_DIR/Pure-DDZ-Classic-v${VERSION}.apk"
+OUTPUT_SHA="$DIST_DIR/Pure-DDZ-Classic-v${VERSION}.sha256"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$STAGE_DIR/assets" "$CLASSES_DIR" "$DEX_DIR" "$DIST_DIR" "$SIGNING_DIR"
 cp -R "$ROOT/web" "$STAGE_DIR/assets/www"
 
+for required in \
+  "$STAGE_DIR/assets/www/index.html" \
+  "$STAGE_DIR/assets/www/css/style.css" \
+  "$STAGE_DIR/assets/www/js/game.js"; do
+  if [[ ! -s "$required" ]]; then
+    echo "缺少 Android 离线资源：$required" >&2
+    exit 1
+  fi
+done
+
 "$BUILD_TOOLS/aapt" package -f \
-  -M "$ROOT/app/src/main/AndroidManifest.xml" \
+  -M "$MANIFEST" \
   -S "$ROOT/app/src/main/res" \
   -A "$STAGE_DIR/assets" \
   -I "$PLATFORM_JAR" \
@@ -78,7 +95,16 @@ fi
   "$ALIGNED_APK"
 
 "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$OUTPUT_APK"
-"$BUILD_TOOLS/aapt" dump badging "$OUTPUT_APK" | sed -n '1,6p'
+BADGING="$("$BUILD_TOOLS/aapt" dump badging "$OUTPUT_APK")"
+printf '%s\n' "$BADGING" | sed -n '1,6p'
+printf '%s\n' "$BADGING" | grep -q "versionName='${VERSION}'"
+
+unzip -l "$OUTPUT_APK" | grep -q 'assets/www/index.html'
+unzip -l "$OUTPUT_APK" | grep -q 'assets/www/css/style.css'
+unzip -l "$OUTPUT_APK" | grep -q 'assets/www/js/game.js'
+unzip -l "$OUTPUT_APK" | grep -q 'classes.dex'
+
 APK_HASH="$(shasum -a 256 "$OUTPUT_APK" | awk '{print $1}')"
-printf '%s  %s\n' "$APK_HASH" "$(basename "$OUTPUT_APK")" | tee "$DIST_DIR/Pure-DDZ-Classic-v1.0.0.sha256"
+printf '%s  %s\n' "$APK_HASH" "$(basename "$OUTPUT_APK")" | tee "$OUTPUT_SHA"
+echo "APK_VERSION=$VERSION"
 echo "APK_READY=$OUTPUT_APK"
