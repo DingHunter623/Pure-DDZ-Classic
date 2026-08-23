@@ -1,16 +1,15 @@
-const CACHE='pure-ddz-v1.2.0-visual-r1';
+const CACHE='pure-ddz-v1.2.0-visual-r2';
 const ASSETS=[
   './',
   './index.html',
-  './css/style.css?v=20260823-v110',
-  './css/qilylean-theme.css?v=20260823-v110',
-  './css/card-size-v2.css?v=20260823-v111',
+  './css/style.css?v=20260823-v120',
+  './css/qilylean-theme.css?v=20260823-v120',
   './css/visual-v120.css?v=20260823-v120',
-  './js/qilylean-theme.js?v=20260823-v110',
-  './js/card-theme.js?v=20260823-v110',
+  './js/qilylean-theme.js?v=20260823-v120',
+  './js/card-theme.js?v=20260823-v120',
+  './js/ai-expert.js?v=20260823-v120',
+  './js/game.js?v=20260823-v120',
   './js/visual-v120.js?v=20260823-v120',
-  './js/ai-expert.js?v=20260823-v110',
-  './js/game.js?v=20260823-v110',
   './manifest.webmanifest',
   './assets/icon.svg',
   './assets/pure-ddz/avatar-king.webp',

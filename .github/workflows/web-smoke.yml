@@ -15,14 +15,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Validate v1.1.0 runtime modules
+      - name: Validate v1.2.0 runtime modules
         run: |
           set -euo pipefail
           node --check web/js/qilylean-theme.js
           node --check web/js/card-theme.js
+          node --check web/js/visual-v120.js
           node --check web/js/ai-expert.js
           node --check web/js/game.js
-          grep -q "const VERSION = '1.1.0'" web/js/game.js
+          grep -q '"version": "1.2.0"' package.json
+          grep -q 'v1.2.0 可视化 · 启力托管版' web/index.html
+          grep -q 'css/visual-v120.css' web/index.html
+          grep -q 'js/visual-v120.js' web/index.html
+          grep -q '启力托管：关' web/index.html
+          grep -q '>出牌</button>' web/index.html
+          grep -q "VISUAL_HOLD_MS=900" web/js/visual-v120.js
+          grep -q 'visualQueue' web/js/visual-v120.js
+          grep -q '启力精益 | https://qilylean.com' web/js/card-theme.js
           grep -q "difficulty:'expert'" web/js/game.js
           grep -q "challenge" web/js/ai-expert.js
           grep -q "PublicCardMemory" web/js/ai-expert.js

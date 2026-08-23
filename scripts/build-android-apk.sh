@@ -26,6 +26,7 @@ if [[ ! -x "$BUILD_TOOLS/aapt" || ! -f "$PLATFORM_JAR" ]]; then
 fi
 
 grep -q 'android:screenOrientation="landscape"' "$MANIFEST"
+grep -q "private static final String VERSION = \"${VERSION}\";" "$ROOT/app/src/main/java/com/pureddz/classic/MainActivity.java"
 
 BUILD_DIR="$ROOT/build/manual-android"
 STAGE_DIR="$BUILD_DIR/stage"
@@ -73,6 +74,13 @@ grep -q "airplane-joker.png" "$STAGE_DIR/assets/www/js/card-theme.js"
 grep -q '启力精益 | https://qilylean.com' "$STAGE_DIR/assets/www/js/card-theme.js"
 grep -q '启力托管' "$STAGE_DIR/assets/www/js/visual-v120.js"
 grep -q 'requestLandscape' "$STAGE_DIR/assets/www/js/visual-v120.js"
+grep -q 'VISUAL_HOLD_MS=900' "$STAGE_DIR/assets/www/js/visual-v120.js"
+grep -q 'visualQueue' "$STAGE_DIR/assets/www/js/visual-v120.js"
+grep -q 'css/visual-v120.css' "$STAGE_DIR/assets/www/index.html"
+grep -q 'js/visual-v120.js' "$STAGE_DIR/assets/www/index.html"
+grep -q '启力托管：关' "$STAGE_DIR/assets/www/index.html"
+grep -q '>出牌</button>' "$STAGE_DIR/assets/www/index.html"
+grep -q "v${VERSION}" "$STAGE_DIR/assets/www/index.html"
 
 "$BUILD_TOOLS/aapt" package -f \
   -M "$MANIFEST" \
