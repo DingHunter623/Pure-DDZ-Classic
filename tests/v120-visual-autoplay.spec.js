@@ -20,7 +20,7 @@ test('visual-first cards are larger and carry rank at top plus QilyLean site at 
   await page.goto(url);
   await waitForV120(page);
   await becomeLandlord(page);
-  const card = page.locator('#hand .card').first();
+  const card = page.locator('#hand .card:not(.joker)').first();
   const metrics = await card.evaluate(el => {
     const box = el.getBoundingClientRect();
     const rank = el.querySelector('.qily-card-corner b');
@@ -37,7 +37,7 @@ test('visual-first cards are larger and carry rank at top plus QilyLean site at 
   });
   expect(metrics.width).toBeGreaterThanOrEqual(118);
   expect(metrics.height).toBeGreaterThanOrEqual(176);
-  expect(metrics.rank).toMatch(/^(A|2|3|4|5|6|7|8|9|10|J|Q|K|小王|大王)$/);
+  expect(metrics.rank).toMatch(/^(A|2|3|4|5|6|7|8|9|10|J|Q|K)$/);
   expect(metrics.rankFont).toBeGreaterThanOrEqual(32);
   expect(metrics.themeFont).toBeGreaterThanOrEqual(26);
   expect(metrics.site).toBe('启力精益 | https://qilylean.com');
@@ -48,8 +48,9 @@ test('every played hand receives enlarged visual feedback instead of speech-only
   await page.goto(url);
   await waitForV120(page);
   await becomeLandlord(page);
-  const first = page.locator('#hand .card').first();
+  const first = page.locator('#hand .card:not(.joker)').first();
   await first.click();
+  await expect(first).toHaveClass(/selected/);
   await page.locator('#play').click();
   await expect(page.locator('#v120-play-stage')).toHaveClass(/show/, { timeout: 3000 });
   await expect(page.locator('#v120-play-stage .v120-play-owner')).toContainText('我');
