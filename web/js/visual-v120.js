@@ -2,22 +2,29 @@
   'use strict';
 
   const AUTOPLAY_KEY='pure_ddz_qily_autoplay_v1';
+  const VISUAL_HOLD_MS=900;
   let autoplay=localStorage.getItem(AUTOPLAY_KEY)==='1';
   let previousState=null;
   let managedTurnToken='';
   let autoplayTimer=null;
   let stageSignature='';
+  let stageBusy=false;
+  let stageTimer=null;
+  const visualQueue=[];
+  const queuedSignatures=new Set();
 
   const $=id=>document.getElementById(id);
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
-  function isTouchMobile(){
-    return (navigator.maxTouchPoints||0)>0 && window.matchMedia('(max-width:1180px)').matches;
-  }
+  function isTouchMobile(){ return (navigator.maxTouchPoints||0)>0 && window.matchMedia('(max-width:1180px)').matches; }
 
   function playSignature(play){
     if(!play?.cards?.length) return '';
     return `${play.player}|${play.combo?.type||''}|${play.cards.map(card=>card.id).join('-')}`;
+  }
+
+  function snapshotPlay(play){
+    return {player:play.player,combo:{...(play.combo||{})},cards:play.cards.map(card=>({...card}))};
   }
 
   function ensureVisualStage(){
@@ -53,8 +60,7 @@
     ensureOrientationNotice();
     const notice=$('v120-orientation-notice');
     if(!notice) return;
-    const portrait=window.matchMedia('(orientation:portrait)').matches;
-    notice.classList.toggle('show',isTouchMobile()&&portrait);
+    notice.classList.toggle('show',isTouchMobile()&&window.matchMedia('(orientation:portrait)').matches);
   }
 
   async function requestLandscape(){
@@ -76,18 +82,15 @@
   function playerName(player){ return player===0?'我':player===1?'左家 · 电脑':'右家 · 电脑'; }
 
   function renderLargeCard(card){
-    if(window.QilyLeanCardTheme?.renderCard){
-      return `<span class="v120-play-card">${window.QilyLeanCardTheme.renderCard(card)}</span>`;
-    }
+    if(window.QilyLeanCardTheme?.renderCard) return `<span class="v120-play-card">${window.QilyLeanCardTheme.renderCard(card)}</span>`;
     return `<span class="v120-play-card">${String(card.rank)}</span>`;
   }
 
-  function showPlay(play){
+  function renderStage(play){
     ensureVisualStage();
     const stage=$('v120-play-stage');
-    if(!stage||!play?.cards?.length) return;
+    if(!stage) return;
     const signature=playSignature(play);
-    if(signature===stageSignature) return;
     stageSignature=signature;
     const combo=play.combo?.type||'出牌';
     const comboText={single:'单牌',pair:'对子',triple:'三张',triple1:'三带一',triple2:'三带二',straight:'顺子',pairStraight:'连对',airplane:'飞机',airplane1:'飞机带单',airplane2:'飞机带对',four2:'四带二',four2pair:'四带两对',bomb:'炸弹',rocket:'王炸'}[combo]||'出牌';
@@ -96,12 +99,43 @@
     stage.innerHTML=`<div class="v120-play-owner">${playerName(play.player)} · ${comboText} · ${play.cards.length} 张</div><div class="v120-play-cards">${play.cards.map(renderLargeCard).join('')}</div>`;
     stage.classList.toggle('is-bomb',['bomb','rocket'].includes(combo));
     stage.classList.add('show');
+    stageBusy=true;
+    if(stageTimer) clearTimeout(stageTimer);
+    stageTimer=setTimeout(()=>{
+      stageBusy=false;
+      stageTimer=null;
+      processVisualQueue();
+    },VISUAL_HOLD_MS);
   }
 
-  function clearPlayStage(){
+  function processVisualQueue(){
+    if(stageBusy||!visualQueue.length) return;
+    const play=visualQueue.shift();
+    queuedSignatures.delete(playSignature(play));
+    renderStage(play);
+  }
+
+  function showPlay(play){
+    if(!play?.cards?.length) return;
+    const signature=playSignature(play);
+    if(signature===stageSignature||queuedSignatures.has(signature)) return;
+    const copy=snapshotPlay(play);
+    visualQueue.push(copy);
+    queuedSignatures.add(signature);
+    processVisualQueue();
+  }
+
+  function clearPlayStage(force=false){
+    if(!force&&(stageBusy||visualQueue.length)) return;
     const stage=$('v120-play-stage');
     if(stage){ stage.classList.remove('show','is-bomb'); stage.innerHTML=''; }
     stageSignature='';
+    if(force){
+      visualQueue.length=0;
+      queuedSignatures.clear();
+      stageBusy=false;
+      if(stageTimer){clearTimeout(stageTimer);stageTimer=null;}
+    }
   }
 
   function showPass(player){
@@ -170,12 +204,12 @@
   }
 
   function currentTurnToken(state){
-    const last=playSignature(state.lastPlay);
-    return `${state.roundNumber}|${state.phase}|${state.current}|${state.hands?.[0]?.length||0}|${state.bidTurns||0}|${last}`;
+    return `${state.roundNumber}|${state.phase}|${state.current}|${state.hands?.[0]?.length||0}|${state.bidTurns||0}|${playSignature(state.lastPlay)}`;
   }
 
   function scheduleAutoplay(state){
     if(!autoplay||state.current!==0||!['bidding','playing'].includes(state.phase)) return;
+    if(stageBusy||visualQueue.length) return;
     const token=currentTurnToken(state);
     if(token===managedTurnToken||autoplayTimer) return;
     managedTurnToken=token;
@@ -188,8 +222,7 @@
         if(fresh.phase==='bidding'){
           const bid=window.PureDDZTest.chooseAiBid(0);
           const button=document.querySelector(`[data-bid="${bid}"]`);
-          if(button&&!button.disabled) button.click();
-          else managedTurnToken='';
+          if(button&&!button.disabled) button.click(); else managedTurnToken='';
           return;
         }
         const choice=window.PureDDZTest.chooseAiPlay(0);
@@ -210,11 +243,10 @@
   }
 
   function detectPass(prev,next){
-    if(!prev||prev.phase!=='playing'||next.phase!=='playing') return;
-    if(prev.current===next.current) return;
+    if(!prev||prev.phase!=='playing'||next.phase!=='playing'||prev.current===next.current) return;
     const beforeSig=playSignature(prev.lastPlay),afterSig=playSignature(next.lastPlay);
-    if(beforeSig===afterSig && beforeSig){ showPass(prev.current); return; }
-    if(beforeSig && !afterSig && next.current===prev.lastPlay?.player) showPass(prev.current);
+    if(beforeSig===afterSig&&beforeSig){ showPass(prev.current); return; }
+    if(beforeSig&&!afterSig&&next.current===prev.lastPlay?.player) showPass(prev.current);
   }
 
   function refresh(){
@@ -238,13 +270,7 @@
     setInterval(refresh,120);
   }
 
-  window.QilyLeanV120=Object.freeze({
-    version:'1.2.0',
-    get autoplay(){ return autoplay; },
-    setAutoplay,
-    requestLandscape,
-    refresh
-  });
+  window.QilyLeanV120=Object.freeze({version:'1.2.0',visualHoldMs:VISUAL_HOLD_MS,get autoplay(){return autoplay;},setAutoplay,requestLandscape,refresh});
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
 })();
