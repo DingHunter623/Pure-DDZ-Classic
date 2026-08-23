@@ -1,0 +1,68 @@
+name: Sync Official Product Overview Copy
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-product-overview-copy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch static web entry copy
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('web/index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace(
+            'Pure DDZ Classic v1.1.0｜QilyLean智力强化主题版：无广告、无登录、无付费，专家级AI、公开信息记牌、QilyLean技能主题牌面。',
+            'QilyLean 无广告斗地主｜简单娱乐，益智生活：无广告、无强制注册、操作简单，打开即可畅玩；为父母辈提供轻松便捷的休闲益智体验，也适合成年人放松思考。'
+          )
+          s=s.replace(
+            '<title>纯净斗地主 v1.1.0｜QilyLean 智力强化主题版</title>',
+            '<title>QilyLean 无广告斗地主｜简单娱乐，益智生活</title>'
+          )
+          s=s.replace(
+            '<strong>永久免费</strong><span>无广告 · 无注册 · 无登录 · 无支付 · 不收集个人信息 · AI仅使用公开牌桌信息</span>',
+            '<strong>简单娱乐 · 益智生活</strong><span>无广告 · 无强制注册 · 操作简单 · 打开即玩 · AI仅使用公开牌桌信息</span>'
+          )
+          s=s.replace(
+            '<p class="eyebrow">QilyLean 智力强化主题 · 制造运营能力体系融入整副牌</p>',
+            '<p class="eyebrow">QilyLean 无广告斗地主｜简单娱乐，益智生活</p>'
+          )
+          s=s.replace(
+            '默认专家级电脑对手，以公开出牌进行记牌、控牌、残局压制与农民协同；整副牌融入现场事实、工程数据、精益改善、质量保证、数智固化、知识资产及IE/ECRS/SMED/VSM/TPM/OEE等技能主题。大王使用QilyLean头像，小王使用六大业务飞机模型。',
+            '这款游戏源于一个真实的家庭需求：减少实名注册、账号登录、验证码等操作门槛，让父母辈打开即可轻松娱乐；同时也为长期面对复杂问题分析、工程改善、项目管理和高强度思考的成年人提供一个保持思考、适度放松的益智方式。简单、高效、友好，是这款数字产品延续的设计理念。'
+          )
+          s=s.replace(
+            '<li><b>纯净单机</b><span>无广告、无登录、无支付，Android 可离线</span></li>',
+            '<li><b>简单友好</b><span>无广告、无强制注册，Android 可离线</span></li>'
+          )
+          p.write_text(s,encoding='utf-8')
+          PY
+          grep -q 'QilyLean 无广告斗地主｜简单娱乐，益智生活' web/index.html
+          grep -q '无强制注册' web/index.html
+          git diff --check
+      - name: Commit static copy
+        run: |
+          set -euo pipefail
+          git config user.name 'QilyLean Release Bot'
+          git config user.email 'DingHunter623@gmail.com'
+          git add web/index.html
+          if git diff --cached --quiet; then
+            echo 'Static web copy already aligned'
+          else
+            git commit -m 'content: align web entry with simple entertainment overview'
+            git push origin HEAD:main
+          fi
