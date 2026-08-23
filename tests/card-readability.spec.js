@@ -9,31 +9,34 @@ async function openRound(page) {
   await expect(page.locator('#bid-controls')).toBeVisible({ timeout: 5000 });
 }
 
-test('desktop hand uses large readable cards and removes repeated footer labels', async ({ page }) => {
+test('desktop hand uses v1.2 visual-first readable cards and removes repeated footer labels', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openRound(page);
   await expect(page.locator('#hand .card')).toHaveCount(17);
   await expect(page.locator('#hand .qily-card-footer')).toHaveCount(0);
-  const metrics = await page.locator('#hand .card').first().evaluate(card => {
+  const metrics = await page.locator('#hand .card:not(.joker)').first().evaluate(card => {
     const box = card.getBoundingClientRect();
     const rank = card.querySelector('.qily-card-corner b');
     const theme = card.querySelector('.qily-card-theme > strong');
     const title = card.querySelector('.qily-card-theme > b');
+    const site = card.querySelector('.qily-card-site');
     return {
       width: box.width,
       height: box.height,
       rankFont: rank ? parseFloat(getComputedStyle(rank).fontSize) : 0,
       themeFont: theme ? parseFloat(getComputedStyle(theme).fontSize) : 0,
       titleFont: title ? parseFloat(getComputedStyle(title).fontSize) : 0,
-      hasLargeCss: Boolean(document.getElementById('qily-large-card-readability-v2'))
+      site: site?.textContent || '',
+      hasVisualCss: Boolean(document.getElementById('qily-visual-v120-css'))
     };
   });
-  expect(metrics.hasLargeCss).toBe(true);
-  expect(metrics.width).toBeGreaterThanOrEqual(100);
-  expect(metrics.height).toBeGreaterThanOrEqual(150);
-  expect(metrics.rankFont).toBeGreaterThanOrEqual(26);
-  expect(metrics.themeFont).toBeGreaterThanOrEqual(22);
-  expect(metrics.titleFont).toBeGreaterThanOrEqual(13);
+  expect(metrics.hasVisualCss).toBe(true);
+  expect(metrics.width).toBeGreaterThanOrEqual(118);
+  expect(metrics.height).toBeGreaterThanOrEqual(176);
+  expect(metrics.rankFont).toBeGreaterThanOrEqual(32);
+  expect(metrics.themeFont).toBeGreaterThanOrEqual(26);
+  expect(metrics.titleFont).toBeGreaterThanOrEqual(15);
+  expect(metrics.site).toBe('启力精益 | https://qilylean.com');
 });
 
 test('phone keeps enlarged cards readable without page horizontal overflow', async ({ page }) => {
@@ -47,7 +50,7 @@ test('phone keeps enlarged cards readable without page horizontal overflow', asy
       overflow: document.documentElement.scrollWidth - window.innerWidth
     };
   });
-  expect(metrics.width).toBeGreaterThanOrEqual(70);
-  expect(metrics.height).toBeGreaterThanOrEqual(108);
+  expect(metrics.width).toBeGreaterThanOrEqual(80);
+  expect(metrics.height).toBeGreaterThanOrEqual(120);
   expect(metrics.overflow).toBeLessThanOrEqual(1);
 });

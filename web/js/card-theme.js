@@ -4,6 +4,7 @@
   const scriptUrl=document.currentScript?.src||'';
   const runtimeRoot=scriptUrl?new URL('../',scriptUrl):new URL('./',window.location.href);
   const assetUrl=file=>new URL(`assets/pure-ddz/${file}`,runtimeRoot).href;
+  const runtimeUrl=file=>new URL(file,runtimeRoot).href;
 
   const RANK_THEME = Object.freeze({
     3:{code:'现场',title:'现场事实',subtitle:'Gemba Facts',skill:'现场观察'},
@@ -34,6 +35,7 @@
   });
 
   const RULE_RANK = Object.freeze({11:'J',12:'Q',13:'K',14:'A',15:'2',16:'小王',17:'大王'});
+  const CARD_SITE='启力精益 | https://qilylean.com';
 
   function escapeHtml(value){
     return String(value ?? '')
@@ -57,6 +59,7 @@
       <span class="qily-card-corner"><b>${escapeHtml(theme.title)}</b><i>JOKER</i></span>
       <span class="qily-joker-visual"><img src="${escapeHtml(theme.image)}" alt="${escapeHtml(theme.title)}" draggable="false"></span>
       <span class="qily-card-main"><strong>${escapeHtml(theme.code)}</strong><em>${escapeHtml(theme.subtitle)}</em></span>
+      <span class="qily-card-site">${escapeHtml(CARD_SITE)}</span>
     </span>`;
   }
 
@@ -65,6 +68,7 @@
     return `<span class="qily-card qily-card--normal${red?' qily-rule-red':''}">
       <span class="qily-card-corner"><b>${escapeHtml(ruleRankText(card))}</b><i>${escapeHtml(card.suit)}</i></span>
       <span class="qily-card-theme"><small>${escapeHtml(theme.suit.code)}</small><strong>${escapeHtml(theme.code)}</strong><b>${escapeHtml(theme.title)}</b><em>${escapeHtml(theme.skill)}</em></span>
+      <span class="qily-card-site">${escapeHtml(CARD_SITE)}</span>
     </span>`;
   }
 
@@ -76,5 +80,23 @@
     return `<span class="mini-card qily-mini-business${card.suit==='♥'||card.suit==='♦'?' red':''}"><b>${escapeHtml(ruleRankText(card))}${escapeHtml(card.suit)}</b><small>${escapeHtml(theme.code)}</small></span>`;
   }
 
-  window.QilyLeanCardTheme=Object.freeze({getTheme,renderCard,renderMiniCard,ruleRankText,rankThemes:RANK_THEME,suitThemes:SUIT_THEME,jokerThemes:JOKER_THEME,runtimeRoot:runtimeRoot.href});
+  function loadV120(){
+    if(!document.getElementById('qily-visual-v120-css')){
+      const link=document.createElement('link');
+      link.id='qily-visual-v120-css';
+      link.rel='stylesheet';
+      link.href=runtimeUrl('css/visual-v120.css?v=20260823-v120');
+      document.head.appendChild(link);
+    }
+    if(!document.querySelector('script[data-qily-visual-v120]')){
+      const script=document.createElement('script');
+      script.dataset.qilyVisualV120='1';
+      script.src=runtimeUrl('js/visual-v120.js?v=20260823-v120');
+      script.async=true;
+      document.body.appendChild(script);
+    }
+  }
+
+  window.QilyLeanCardTheme=Object.freeze({getTheme,renderCard,renderMiniCard,ruleRankText,rankThemes:RANK_THEME,suitThemes:SUIT_THEME,jokerThemes:JOKER_THEME,runtimeRoot:runtimeRoot.href,cardSite:CARD_SITE});
+  loadV120();
 })();
