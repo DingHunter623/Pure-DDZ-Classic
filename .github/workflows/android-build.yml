@@ -30,11 +30,11 @@ jobs:
           scripts/build-android-apk.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: Pure-DDZ-Classic-v1.0.3-ci
+          name: Pure-DDZ-Classic-v1.1.0-ci
           retention-days: 14
           path: |
-            dist/Pure-DDZ-Classic-v1.0.3.apk
-            dist/Pure-DDZ-Classic-v1.0.3.sha256
+            dist/Pure-DDZ-Classic-v1.1.0.apk
+            dist/Pure-DDZ-Classic-v1.1.0.sha256
 
   launch-smoke:
     needs: apk
@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Pure-DDZ-Classic-v1.0.3-ci
+          name: Pure-DDZ-Classic-v1.1.0-ci
           path: dist
       - name: Enable KVM
         run: |
@@ -58,7 +58,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            bash -lc 'set -euo pipefail; adb install -r dist/Pure-DDZ-Classic-v1.0.3.apk; adb logcat -c; adb shell am force-stop com.pureddz.classic; adb shell am start -W -n com.pureddz.classic/.MainActivity | tee /tmp/am-start.txt; grep -q "Status: ok" /tmp/am-start.txt; sleep 5; PID="$(adb shell pidof com.pureddz.classic 2>/dev/null | tr -d "\r" || true)"; adb logcat -d -v time > /tmp/pure-ddz-logcat.txt || true; if [[ -z "$PID" ]]; then echo APP_PROCESS_DIED_AFTER_LAUNCH; grep -E -A 30 -B 15 "FATAL EXCEPTION|AndroidRuntime|Process: com\.pureddz\.classic|WebView|chromium" /tmp/pure-ddz-logcat.txt || tail -n 300 /tmp/pure-ddz-logcat.txt; exit 1; fi; adb shell dumpsys activity activities | grep -q "com.pureddz.classic/.MainActivity" || { echo MAIN_ACTIVITY_NOT_FOREGROUND; grep -E -A 30 -B 15 "FATAL EXCEPTION|AndroidRuntime|Process: com\.pureddz\.classic|WebView|chromium" /tmp/pure-ddz-logcat.txt || tail -n 300 /tmp/pure-ddz-logcat.txt; exit 1; }; if grep -E "FATAL EXCEPTION|AndroidRuntime.*com\.pureddz\.classic" /tmp/pure-ddz-logcat.txt; then echo DETECTED_ANDROID_RUNTIME_CRASH; grep -E -A 30 -B 15 "FATAL EXCEPTION|AndroidRuntime|Process: com\.pureddz\.classic" /tmp/pure-ddz-logcat.txt; exit 1; fi; echo "ANDROID_LAUNCH_SMOKE_OK pid=$PID"'
+            bash -lc 'set -euo pipefail; adb install -r dist/Pure-DDZ-Classic-v1.1.0.apk; adb logcat -c; adb shell am force-stop com.pureddz.classic; adb shell am start -W -n com.pureddz.classic/.MainActivity | tee /tmp/am-start.txt; grep -q "Status: ok" /tmp/am-start.txt; sleep 5; PID="$(adb shell pidof com.pureddz.classic 2>/dev/null | tr -d "\r" || true)"; adb logcat -d -v time > /tmp/pure-ddz-logcat.txt || true; if [[ -z "$PID" ]]; then echo APP_PROCESS_DIED_AFTER_LAUNCH; grep -E -A 30 -B 15 "FATAL EXCEPTION|AndroidRuntime|Process: com\.pureddz\.classic|WebView|chromium" /tmp/pure-ddz-logcat.txt || tail -n 300 /tmp/pure-ddz-logcat.txt; exit 1; fi; adb shell dumpsys activity activities | grep -q "com.pureddz.classic/.MainActivity" || { echo MAIN_ACTIVITY_NOT_FOREGROUND; grep -E -A 30 -B 15 "FATAL EXCEPTION|AndroidRuntime|Process: com\.pureddz\.classic|WebView|chromium" /tmp/pure-ddz-logcat.txt || tail -n 300 /tmp/pure-ddz-logcat.txt; exit 1; }; if grep -E "FATAL EXCEPTION|AndroidRuntime.*com\.pureddz\.classic" /tmp/pure-ddz-logcat.txt; then echo DETECTED_ANDROID_RUNTIME_CRASH; grep -E -A 30 -B 15 "FATAL EXCEPTION|AndroidRuntime|Process: com\.pureddz\.classic" /tmp/pure-ddz-logcat.txt; exit 1; fi; echo "ANDROID_V110_LAUNCH_SMOKE_OK pid=$PID"'
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -67,22 +67,24 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Pure-DDZ-Classic-v1.0.3-ci
+          name: Pure-DDZ-Classic-v1.1.0-ci
           path: dist
       - name: Publish stable GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.3
-          name: Pure DDZ Classic v1.0.3
+          tag_name: v1.1.0
+          name: Pure DDZ Classic v1.1.0 · QilyLean 智力强化主题版
           target_commitish: main
           make_latest: true
           body: |
-            纯净斗地主 v1.0.3 Android 启动修复版。
-            修复 Android 35 / targetSdk 36 下 MainActivity 启动阶段过早调用 WindowInsetsController 导致的 NullPointerException 秒退。
+            Pure DDZ Classic v1.1.0｜QilyLean 智力强化主题版。
+
+            AI：新增 Expert / Challenge，默认 Expert；以公开出牌记忆辅助叫地主、手牌结构保护、控牌、残局压制和农民协同，不读取隐藏手牌作弊。
+            牌面：54 张牌升级为 QilyLean 制造运营技能/业务主题，同时保留传统点数与花色规则角标。
+            Joker：大王使用 QilyLean 官网头像；小王使用六大业务 C919 飞机模型。
+            Android：主题 JS、AI JS、头像与飞机素材全部打包进 assets/www，可离线使用。
             Release 仅在 Android 35 模拟器完成 APK 安装、MainActivity 启动、5 秒进程存活及 FATAL EXCEPTION 检查后发布。
-            保留 APK 本地 assets/www 离线牌桌与原生启动兜底页。
-            无广告、无登录、无支付；大字体、中文语音、AI 提示。
-            QilyLean｜启力精益 官方发布。
+            无广告、无登录、无支付。
           files: |
-            dist/Pure-DDZ-Classic-v1.0.3.apk
-            dist/Pure-DDZ-Classic-v1.0.3.sha256
+            dist/Pure-DDZ-Classic-v1.1.0.apk
+            dist/Pure-DDZ-Classic-v1.1.0.sha256
